@@ -11,7 +11,7 @@ const int RADIX_NUMBER = 6;
 
 class TBignumArithmetic {
 private:
-    std::vector<int> Bignum;
+    std::vector<long> Bignum;
     friend std::ostream& operator<<(std::ostream &out, TBignumArithmetic num);
     friend bool operator==(TBignumArithmetic &lhs, TBignumArithmetic &rhs);
     friend bool operator>(TBignumArithmetic &lhs, TBignumArithmetic &rhs);
