@@ -3,7 +3,7 @@
 namespace NBignum{
 
 TBignumArithmetic::TBignumArithmetic(std::string str) {
-    for (long i = str.length(); i >= 0; i-=RADIX_NUMBER){
+    for (long i = str.length(); i > 0; i-=RADIX_NUMBER){
         if (i < RADIX_NUMBER){
             Bignum.push_back(atoi(str.substr(0, i).c_str()));
         } else {
@@ -11,6 +11,13 @@ TBignumArithmetic::TBignumArithmetic(std::string str) {
         }
     }
 }
+
+//TBignumArithmetic& operator=(TBignumArithmetic &&expr) {
+//    for (int i = 0; i < expr.Bignum.size(); ++i){
+//        this->Bignum.push_back(expr.Bignum[i]);
+//    }
+//    return *this;
+//}
 
 std::ostream &operator<<(std::ostream &out, TBignumArithmetic num) {
     if (num.Bignum.size() == 0){
@@ -82,7 +89,7 @@ bool operator<(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
     } else if (lhs.Bignum.size() > rhs.Bignum.size()){
         return false;
     } else {
-        for (long i = lhs.Bignum.size(); i >= 0; --i) {
+        for (long i = lhs.Bignum.size() - 1; i >= 0; --i) {
             if (lhs.Bignum[i] < rhs.Bignum[i]) {
                 return true;
             } else if (lhs.Bignum[i] > rhs.Bignum[i]) {
@@ -115,14 +122,14 @@ TBignumArithmetic operator+(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
     long carry = 0;
     for (long i = 0; i < std::max(lhs.Bignum.size(), rhs.Bignum.size()); ++i){
         if (lhs.Bignum.size() <= i){
-            res.Bignum.push_back(rhs.Bignum[i]);
+            res.Bignum.push_back(rhs.Bignum[i] + carry);
         } else if (rhs.Bignum.size() <= i){
-            res.Bignum.push_back(lhs.Bignum[i]);
+            res.Bignum.push_back(lhs.Bignum[i] + carry);
         } else {
             res.Bignum.push_back(lhs.Bignum[i] + rhs.Bignum[i] + carry);
-            carry = res.Bignum[i] / BASE;
-            res.Bignum[i] %= BASE;
         }
+        carry = res.Bignum[i] / BASE;
+        res.Bignum[i] %= BASE;
     }
     if (carry){
         res.Bignum.push_back(carry);
@@ -130,7 +137,7 @@ TBignumArithmetic operator+(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
     return res;
 }
 
-TBignumArithmetic operator-(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
+TBignumArithmetic operator-(TBignumArithmetic lhs, TBignumArithmetic rhs) {
     if (lhs < rhs){
         std::cout << "Error";
         return lhs;
@@ -182,6 +189,77 @@ TBignumArithmetic operator*(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
             term.Bignum.push_back(carry);
         }
         res = res + term;
+    }
+    return res;
+}
+
+TBignumArithmetic operator*(TBignumArithmetic &lhs, long &rhs) {
+    TBignumArithmetic res;
+    long carry = 0;
+    for (long i = 0; i < lhs.Bignum.size(); ++i){
+        res.Bignum.push_back(lhs.Bignum[i] * rhs + carry);
+        carry = res.Bignum[i] / BASE;
+        res.Bignum[i] %= BASE;
+    }
+    if (carry){
+        res.Bignum.push_back(carry);
+    }
+    return res;
+}
+
+TBignumArithmetic operator/(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
+    if (rhs.Bignum.size() == 0 || (rhs.Bignum.size() == 1 && rhs.Bignum[0] == 0)){
+        std::cout << "Error";
+        return lhs;
+    }
+    TBignumArithmetic res;
+    TBignumArithmetic curDividend;
+    for (int i = lhs.Bignum.size() - 1; i >= 0; --i){
+        curDividend.Bignum.insert(curDividend.Bignum.begin(), lhs.Bignum[i]);
+        if (curDividend < rhs){
+            res.Bignum.push_back(0);
+        } else {
+            long l = 0;
+            long r = BASE;
+            long m;
+            TBignumArithmetic tmp;
+            while(l < r - 1){
+                m = (l + r) / 2;
+                tmp = rhs * m;
+                if (tmp < curDividend){
+                    l = m;
+                } else {
+                    r = m;
+                }
+            }
+            tmp = rhs * l;
+            curDividend = curDividend - tmp;
+            res.Bignum.push_back(r);
+        }
+    }
+    std::reverse(res.Bignum.begin(), res.Bignum.end());
+    while(res.Bignum[res.Bignum.size() - 1] == 0){
+        res.Bignum.pop_back();
+    }
+    return res;
+}
+
+TBignumArithmetic operator^(TBignumArithmetic &lhs, TBignumArithmetic &rhs) {
+    if (rhs.Bignum.size() == 0 || (rhs.Bignum.size() == 1 && rhs.Bignum[0])){
+        TBignumArithmetic res("1");
+        return lhs;
+    }
+    TBignumArithmetic res(lhs);
+    TBignumArithmetic big1("1");
+    TBignumArithmetic big2("2");
+    while(rhs.Bignum.size() > 1 || rhs.Bignum[0] != 1){
+        if (rhs.Bignum[0] & 1){
+            res = res * lhs;
+            rhs = rhs - big1;
+        } else {
+            res = res * res;
+            rhs = rhs / big2;
+        }
     }
     return res;
 }
